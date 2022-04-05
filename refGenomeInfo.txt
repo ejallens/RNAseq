@@ -1,0 +1,25 @@
+
+
+##########################################
+############# Reference Used #############
+
+Reference URL from Ensembl
+
+ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/
+
+
+Assembly path used with wget
+
+ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_sm.primary_assembly.fa.gz
+
+
+##########################################
+
+
+
+
+Also:
+
+Reference URL from UCSC
+
+https://hgdownload.cse.ucsc.edu/goldenPath/mm39/chromosomes/
