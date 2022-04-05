@@ -1,24 +1,47 @@
 
 
 ##########################################
-############# Reference Used #############
-
-Reference URL from Ensembl
-
-ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/
 
 
-Assembly path used with wget
+############# wget references #############
 
-ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_sm.primary_assembly.fa.gz
+  - Reference URL from Ensembl
+
+    ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/
 
 
+######## Genome
+
+  - Assembly path used with wget
+
+    wget ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna_sm.primary_assembly.fa.gz
+
+  - gunzip 
+
+
+######## cDNA reference
+
+  wget ftp://ftp.ensembl.org/pub/release-99/fasta/mus_musculus/cdna/Mus_musculus.GRCm38.cdna.all.fa.gz
+
+
+############# wget annotation files #############
+
+  - FTP url:
+  
+  ftp://ftp.ensembl.org/pub/release-99/gtf/mus_musculus/
+  
+  - wget full annotation file
+  
+  wget ftp://ftp.ensembl.org/pub/release-99/gtf/mus_musculus/Mus_musculus.GRCm38.99.gtf.gz
+  
+  - gunzip
+  
 ##########################################
 
 
 
 
-Also:
+Not used, but maybe useful later:
 
 Reference URL from UCSC
 
