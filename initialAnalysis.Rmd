@@ -1,0 +1,85 @@
+---
+title: "initialAnalysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# #reference genome 
+# library(BSgenome.Mmusculus.UCSC.mm10)
+# 
+# #annotations
+# library(org.Mm.eg.db)
+
+#creating count matrix
+library(tximeta)
+
+library(AnnotationHub)
+library(ensembldb)
+library(BiocManager)
+
+library(tidyverse)
+
+
+```
+
+## Protocol:
+
+### 1. Use salmon to quantify transcripts
+### 2. Use tximeta to get count matrix
+### 3. use with DEseq for expression
+
+
+import data table & create table with file paths to sample quant files
+``` {r include = TRUE}
+
+data_table = read.delim("data_table", stringsAsFactors = F)
+
+txdata = data_table %>% dplyr::select(c(SampleName, QuantFile))
+names(txdata) = c("names", "files")
+
+dirPath = "/active/allenspach_e/AllenspachRNASeqData/2022_SH2B3_TcellSeq/data/"
+
+#rename files column to include full path
+
+txdata = txdata %>% mutate(files = paste(dirPath, files, sep = ""))
+
+# test with one sample
+s = txdata[1,]
+
+se = tximeta(txdata)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
