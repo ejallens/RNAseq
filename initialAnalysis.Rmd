@@ -1,6 +1,8 @@
 ---
 title: "initialAnalysis"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -54,7 +56,7 @@ gse = summarizeToGene(se)
 ```
 
 
-```{r include = T}
+```{r createCountMatrix include = T}
 
 #differential expression with DESeq2
 dds = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime)
@@ -96,6 +98,36 @@ library(vsn)
 vsd = vst(dds)
 plotPCA(vsd, intgroup = c("SampleGenotype", "SampleTime"))
 ```
+
+
+```{r diffexp, include = T}
+
+dds = DESeq(dds)
+
+#log2 fold changes and pvalues for WT vs KO
+dds.res = results(dds, contrast = c("SampleGenotype", "WT", "KO"))
+
+```
+
+```{r annotate, include = T}
+
+library(AnnotationDbi)
+library(org.Mm.eg.db)
+
+#map ids
+ens.str = substr(rownames(dds.res), 1, 15)
+res$symbol = mapIds(org.Mm.eg.db,
+                    keys = ens.str,
+                    column = "SYMBOL",
+                    keytype = "ENSEMBL",
+                    multiVals = "first")
+
+
+```
+
+
+
+
 
 
 
