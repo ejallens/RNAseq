@@ -44,19 +44,30 @@ se = tximeta(data.frame(as_tibble(txdata)))
 #get quants at gene level
 gse = summarizeToGene(se)
 
+
+analyzedPath = "/active/allenspach_e/AllenspachRNASeqData/2022_SH2B3_TcellSeq/analyzed_data/"
+
+#save datasets as RDS
+saveRDS(gse, paste(analyzedPath,"gse.rds", sep = ""))
+saveRDS(se, paste(analyzedPath,"se.rds", sep = ""))
+
 ```
 
 
 ```{r include = T}
 
+#differential expression with DESeq2
 dds = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime)
-
 
 #filter out empty rows
 
 #get empty rows
 nonzero = rowSums(counts(dds)) > 1
 dds = dds[nonzero, ]
+
+#factor so genotypes are grouped together
+dds$SampleGenotype = factor(dds$SampleGenotype, levels = c("WT", "KO")) %>%
+  relevel(dds$SampleGenotype, ref = "WT")
 ```
 
 
