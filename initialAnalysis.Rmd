@@ -45,11 +45,11 @@ se = tximeta(data.frame(as_tibble(txdata)))
 gse = summarizeToGene(se)
 
 
-analyzedPath = "/active/allenspach_e/AllenspachRNASeqData/2022_SH2B3_TcellSeq/analyzed_data/"
-
-#save datasets as RDS
-saveRDS(gse, paste(analyzedPath,"gse.rds", sep = ""))
-saveRDS(se, paste(analyzedPath,"se.rds", sep = ""))
+# analyzedPath = "/active/allenspach_e/AllenspachRNASeqData/2022_SH2B3_TcellSeq/analyzed_data/"
+# 
+# #save datasets as RDS
+# saveRDS(gse, paste(analyzedPath,"gse.rds", sep = ""))
+# saveRDS(se, paste(analyzedPath,"se.rds", sep = ""))
 
 ```
 
@@ -68,10 +68,11 @@ dds = dds[nonzero, ]
 #factor so genotypes are grouped together
 dds$SampleGenotype = factor(dds$SampleGenotype, levels = c("WT", "KO")) %>%
   relevel(dds$SampleGenotype, ref = "WT")
+
 ```
 
 
-```{r distMatrix, include = T}
+```{r distMatrix, echo=FALSE}
 
 library(PoiClaClu)
 library(RColorBrewer)
@@ -89,12 +90,11 @@ pheatmap::pheatmap(samplePoisDistMatrix, clustering_distance_rows = poisd$dd,
 
 ```{r PCAplots, include = T}
 
+library(vsn)
 
-lambda <- 10^seq(from = -1, to = 2, length = 1000)
-cts <- matrix(rpois(1000*100, lambda), ncol = 100)
-library("vsn")
-meanSdPlot(cts, ranks = FALSE)
-
+#variance stabilizing transformation
+vsd = vst(dds)
+plotPCA(vsd, intgroup = c("SampleGenotype", "SampleTime"))
 ```
 
 
