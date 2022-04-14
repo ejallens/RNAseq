@@ -27,7 +27,7 @@ library(DESeq2)
 import data table & create table with file paths to sample quant files
 ``` {r include = TRUE}
 
-data_table = read.delim("data_table", stringsAsFactors = F)
+data_table = read.delim("data_table")
 
 txdata = data_table %>% dplyr::select(c(SampleName, SampleGenotype, SampleTime, QuantFile)) %>%
   dplyr::rename(names = SampleName, files = QuantFile)
@@ -45,6 +45,47 @@ se = tximeta(data.frame(as_tibble(txdata)))
 gse = summarizeToGene(se)
 
 ```
+
+
+```{r include = T}
+
+dds = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime)
+
+
+#filter out empty rows
+
+#get empty rows
+nonzero = rowSums(counts(dds)) > 1
+dds = dds[nonzero, ]
+```
+
+
+```{r distMatrix, include = T}
+
+library(PoiClaClu)
+library(RColorBrewer)
+poisd = PoissonDistance(t(counts(dds)))
+
+samplePoisDistMatrix = as.matrix(poisd$dd)
+
+colors <- colorRampPalette((brewer.pal(9, "Blues")) )(255)
+rownames(samplePoisDistMatrix) = paste(dds$SampleGenotype, dds$SampleTime, sep = " - ")
+colnames(samplePoisDistMatrix) = NULL
+pheatmap::pheatmap(samplePoisDistMatrix, clustering_distance_rows = poisd$dd,
+         clustering_distance_cols = poisd$dd, col = colors)
+```
+
+
+```{r PCAplots, include = T}
+
+
+lambda <- 10^seq(from = -1, to = 2, length = 1000)
+cts <- matrix(rpois(1000*100, lambda), ncol = 100)
+library("vsn")
+meanSdPlot(cts, ranks = FALSE)
+
+```
+
 
 
 
