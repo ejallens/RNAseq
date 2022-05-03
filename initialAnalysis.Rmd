@@ -136,7 +136,7 @@ resultsNames(dds)
 library(genefilter)
 
 
-topVarGenes = head(order(rowVars(annovsd), decreasing = T), 20)
+topVarGenes = head(order(rowVars(assay(vsd)), decreasing = T), 20)
 mat = assay(vsd)[ topVarGenes, ]
 
 rownames(mat) <- mapIds(org.Mm.eg.db,
@@ -166,24 +166,6 @@ plotMA(res, ylim = c(-5, 5))
 ```
 
 
-```{r annotate, include = T, echo = F}
-
-library(AnnotationDbi)
-library(org.Mm.eg.db)
-
-#map ids from logfold change (shrinked)
-ens.str = substr(rownames(res), 1, 15)
-res$symbol <- mapIds(org.Mm.eg.db,
-                    keys = row.names(res),
-                    column = "SYMBOL",
-                    keytype = "ENSEMBL",
-                    multiVals = "first")
-
-
-
-
-```
-
 ```{r deseq_timecourse, include = T}
 
 ddsTC = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime + SampleGenotype:SampleTime)
@@ -195,12 +177,3 @@ resTC = results(ddsTC)
 resTC$symbol = mcols(ddsTC)$symbol
 
 ```
-
-
-```{r annotate, include = T}
-
-
-
-
-```
-
