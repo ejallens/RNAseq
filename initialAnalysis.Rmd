@@ -1,5 +1,5 @@
 ---
-title: "initialAnalysis"
+title: "RNAseq: CD8+ OT-I Stimulation Timecourse in SH2B3 mice"
 output:
   pdf_document: default
   html_document: default
@@ -27,7 +27,7 @@ library(DESeq2)
 
 
 import data table & create table with file paths to sample quant files
-``` {r , include = TRUE, echo=FALSE}
+``` {r , echo = F}
 
 data_table = read.delim("data_table")
 
@@ -55,8 +55,9 @@ gse = summarizeToGene(se)
 
 ```
 
+Using DESeq to get read counts
 
-```{r createCountMatrix, include = T, echo=FALSE}
+```{r createCountMatrix, include = T}
 
 #differential expression with DESeq2
 dds = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime)
@@ -82,6 +83,7 @@ dds.res = results(dds, contrast = c("SampleGenotype", "WT", "KO"))
 
 ```
 
+Annotating dataframe with gene symbols
 
 ```{r annotate_dds, include = F}
 library(AnnotationDbi)
@@ -97,7 +99,7 @@ dds.res$symbol <- mapIds(org.Mm.eg.db,
 ```
 
 
-
+Visualizing sample distances
 ```{r distMatrix, echo=FALSE}
 
 library(PoiClaClu)
@@ -114,6 +116,7 @@ pheatmap::pheatmap(samplePoisDistMatrix, clustering_distance_rows = poisd$dd,
          clustering_distance_cols = poisd$dd, col = colors)
 ```
 
+PCA plot (all time points)
 
 ```{r PCAplots, include = T}
 
@@ -123,14 +126,8 @@ library(vsn)
 vsd = vst(dds)
 plotPCA(vsd, intgroup = c("SampleGenotype", "SampleTime"))
 ```
-```{r logfoldchange, include = F}
-library(apeglm)
 
-#different comparisons we can use
-resultsNames(dds)
-
-```
-
+Gene cluster heatmap
 ```{r genecluster, include = T}
 
 library(genefilter)
@@ -148,12 +145,16 @@ rownames(mat) <- mapIds(org.Mm.eg.db,
 mat = mat - rowMeans(mat)
 anno = as.data.frame(colData(vsd)[, c("SampleGenotype", "SampleTime")])
 
+
+
+# png(filename = "h1eatmap.png", width = 6, height = 6, units = "in", res = 300, type = "cairo")
 pheatmap::pheatmap(mat, annotation_col = anno)
+# while (!is.null(dev.list()))  dev.off()
 ```
 
 
 
-```{r logfoldchange_shrink, include = T}
+```{r logfoldchange_shrink, include = F}
 
 library(apeglm)
 
@@ -165,9 +166,12 @@ res = lfcShrink(dds, coef = "SampleGenotype_KO_vs_WT", type = "apeglm")
 plotMA(res, ylim = c(-5, 5))
 ```
 
-
+Processing data as time course:
+Start with likelihood ratio test to remove genotype specific differences - 
+the remaining genes with small p values showed genotype specific effects after
+time 0hr.
 ```{r deseq_timecourse, include = T}
-
+library(tidyverse)
 ddsTC = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime + SampleGenotype:SampleTime)
 
 #likelyhood ratio test
@@ -176,4 +180,41 @@ ddsTC = DESeq(ddsTC, test="LRT", reduced = ~ SampleGenotype + SampleTime)
 resTC = results(ddsTC)
 resTC$symbol = mcols(ddsTC)$symbol
 
+stim = plotCounts(ddsTC, which.min(resTC$padj),
+                  intgroup = c("SampleGenotype", "SampleTime"), returnData = T)
+stim$hour = as.numeric(as.character(stim$SampleTime))
+
+ggplot(stim,
+       aes(x = SampleTime, y = count, color = SampleGenotype, group = SampleGenotype)) + geom_point() +
+  stat_summary(fun = mean, geom = "line") + scale_y_log10()
 ```
+
+Cluster significant genes by profile
+
+
+```{r, echo = F}
+betas = coef(ddsTC)
+
+#plot top 20 genes
+topGenes = head(order(resTC$padj), 20)
+mat = betas[topGenes, -c(1,2)]
+
+rownames(mat) <- mapIds(org.Mm.eg.db,
+                    keys = rownames(mat),
+                    column = "SYMBOL",
+                    keytype = "ENSEMBL",
+                    multiVals = "first")
+
+thr = 3
+mat[mat < -thr] = -thr
+mat[mat > thr] = thr
+
+
+pheatmap::pheatmap(mat, breaks = seq(from = -thr, to = thr, length = 101),
+         cluster_col = F)
+```
+
+
+
+
+
