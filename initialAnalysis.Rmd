@@ -27,7 +27,7 @@ library(DESeq2)
 
 
 import data table & create table with file paths to sample quant files
-``` {r include = TRUE}
+``` {r , include = TRUE, echo=FALSE}
 
 data_table = read.delim("data_table")
 
@@ -56,7 +56,7 @@ gse = summarizeToGene(se)
 ```
 
 
-```{r createCountMatrix include = T}
+```{r createCountMatrix, include = T, echo=FALSE}
 
 #differential expression with DESeq2
 dds = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime)
@@ -73,12 +73,37 @@ dds$SampleGenotype = factor(dds$SampleGenotype, levels = c("WT", "KO")) %>%
 
 ```
 
+```{r diffexp, include = T}
+
+dds = DESeq(dds)
+
+#log2 fold changes and pvalues for WT vs KO
+dds.res = results(dds, contrast = c("SampleGenotype", "WT", "KO"))
+
+```
+
+
+```{r annotate_dds, include = F}
+library(AnnotationDbi)
+library(org.Mm.eg.db)
+
+#map ids from logfold change (shrinked)
+dds.res$symbol <- mapIds(org.Mm.eg.db,
+                    keys = row.names(dds.res),
+                    column = "SYMBOL",
+                    keytype = "ENSEMBL",
+                    multiVals = "first")
+
+```
+
+
 
 ```{r distMatrix, echo=FALSE}
 
 library(PoiClaClu)
 library(RColorBrewer)
 poisd = PoissonDistance(t(counts(dds)))
+
 
 samplePoisDistMatrix = as.matrix(poisd$dd)
 
@@ -98,37 +123,84 @@ library(vsn)
 vsd = vst(dds)
 plotPCA(vsd, intgroup = c("SampleGenotype", "SampleTime"))
 ```
+```{r logfoldchange, include = F}
+library(apeglm)
 
-
-```{r diffexp, include = T}
-
-dds = DESeq(dds)
-
-#log2 fold changes and pvalues for WT vs KO
-dds.res = results(dds, contrast = c("SampleGenotype", "WT", "KO"))
+#different comparisons we can use
+resultsNames(dds)
 
 ```
 
-```{r annotate, include = T}
+```{r genecluster, include = T}
+
+library(genefilter)
+
+
+topVarGenes = head(order(rowVars(annovsd), decreasing = T), 20)
+mat = assay(vsd)[ topVarGenes, ]
+
+rownames(mat) <- mapIds(org.Mm.eg.db,
+                    keys = rownames(mat),
+                    column = "SYMBOL",
+                    keytype = "ENSEMBL",
+                    multiVals = "first")
+
+mat = mat - rowMeans(mat)
+anno = as.data.frame(colData(vsd)[, c("SampleGenotype", "SampleTime")])
+
+pheatmap::pheatmap(mat, annotation_col = anno)
+```
+
+
+
+```{r logfoldchange_shrink, include = T}
+
+library(apeglm)
+
+resultsNames(dds)
+
+#calculate lfc shrink for 0hr
+res = lfcShrink(dds, coef = "SampleGenotype_KO_vs_WT", type = "apeglm")
+
+plotMA(res, ylim = c(-5, 5))
+```
+
+
+```{r annotate, include = T, echo = F}
 
 library(AnnotationDbi)
 library(org.Mm.eg.db)
 
-#map ids
-ens.str = substr(rownames(dds.res), 1, 15)
-res$symbol = mapIds(org.Mm.eg.db,
-                    keys = ens.str,
+#map ids from logfold change (shrinked)
+ens.str = substr(rownames(res), 1, 15)
+res$symbol <- mapIds(org.Mm.eg.db,
+                    keys = row.names(res),
                     column = "SYMBOL",
                     keytype = "ENSEMBL",
                     multiVals = "first")
 
 
+
+
+```
+
+```{r deseq_timecourse, include = T}
+
+ddsTC = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime + SampleGenotype:SampleTime)
+
+#likelyhood ratio test
+ddsTC = DESeq(ddsTC, test="LRT", reduced = ~ SampleGenotype + SampleTime)
+
+resTC = results(ddsTC)
+resTC$symbol = mcols(ddsTC)$symbol
+
 ```
 
 
+```{r annotate, include = T}
 
 
 
 
-
+```
 
