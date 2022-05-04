@@ -1,4 +1,8 @@
 ---
+title: "timecourse_Analysis"
+output: pdf_document
+---
+---
 title: "RNAseq: CD8+ OT-I Stimulation Timecourse in SH2B3 mice"
 output:
   pdf_document: default
@@ -43,15 +47,8 @@ txdata = txdata %>% mutate(files = paste(dirPath, files, sep = ""))
 #import quantifications with automatic metadata
 se = tximeta(data.frame(as_tibble(txdata)))
 
-#get quants at gene level
+#get quants at gene level (removing here)
 gse = summarizeToGene(se)
-
-
-# analyzedPath = "/active/allenspach_e/AllenspachRNASeqData/2022_SH2B3_TcellSeq/analyzed_data/"
-# 
-# #save datasets as RDS
-# saveRDS(gse, paste(analyzedPath,"gse.rds", sep = ""))
-# saveRDS(se, paste(analyzedPath,"se.rds", sep = ""))
 
 ```
 
@@ -61,6 +58,9 @@ Using DESeq to get read counts
 
 #differential expression with DESeq2
 dds = DESeqDataSet(gse, design = ~ SampleGenotype + SampleTime + SampleGenotype:SampleTime)
+
+#use if want to do transcript specific
+# dds = DESeqDataSet(se, design = ~ SampleGenotype + SampleTime + SampleGenotype:SampleTime)
 
 #filter out empty rows
 
@@ -90,11 +90,21 @@ library(AnnotationDbi)
 library(org.Mm.eg.db)
 
 #map ids from logfold change (shrinked)
-dds.res$symbol <- mapIds(org.Mm.eg.db,
-                    keys = row.names(dds.res),
-                    column = "SYMBOL",
-                    keytype = "ENSEMBL",
-                    multiVals = "first")
+
+
+dds.res$symbol = mapIds(org.Mm.eg.db,
+                         keys = rownames(dds.res),
+                         keytype = "ENSEMBL",
+                         column = "SYMBOL")
+
+
+
+#use if want transcript specific keys
+# dds.res$symbol <- mapIds(org.Mm.eg.db,
+#                     keys = rownames(dds.res),
+#                     column = "SYMBOL",
+#                     keytype = "ENSEMBLTRANS",
+#                     multiVals = "first")
 
 ```
 
@@ -111,7 +121,9 @@ samplePoisDistMatrix = as.matrix(poisd$dd)
 
 colors <- colorRampPalette((brewer.pal(9, "Blues")) )(255)
 rownames(samplePoisDistMatrix) = paste(dds$SampleGenotype, dds$SampleTime, sep = " - ")
-colnames(samplePoisDistMatrix) = NULL
+
+#can remove column names but will keep here
+colnames(samplePoisDistMatrix) = paste(dds$SampleGenotype, dds$SampleTime, sep = " - ")
 pheatmap::pheatmap(samplePoisDistMatrix, clustering_distance_rows = poisd$dd,
          clustering_distance_cols = poisd$dd, col = colors)
 ```
@@ -122,9 +134,11 @@ PCA plot (all time points)
 
 library(vsn)
 
-#variance stabilizing transformation
-vsd = vst(dds)
-plotPCA(vsd, intgroup = c("SampleGenotype", "SampleTime"))
+#variance stabilizing transformation on non-normalized counts
+vsd = vst(dds, blind = T)
+
+#use ntop to get all rows of matrix (default is 500)
+plotPCA(vsd, intgroup = c("SampleGenotype", "SampleTime"), ntop = nrow(vsd))
 ```
 
 Gene cluster heatmap
@@ -133,19 +147,25 @@ Gene cluster heatmap
 library(genefilter)
 
 
-topVarGenes = head(order(rowVars(assay(vsd)), decreasing = T), 20)
+topVarGenes = head(order(rowVars(assay(vsd)), decreasing = T), 50)
 mat = assay(vsd)[ topVarGenes, ]
 
-rownames(mat) <- mapIds(org.Mm.eg.db,
+
+
+rownames(mat) = mapIds(org.Mm.eg.db,
                     keys = rownames(mat),
                     column = "SYMBOL",
                     keytype = "ENSEMBL",
                     multiVals = "first")
 
+# which genes are NA?
+unmatched_ENSEMBL = rownames(mat)[which(is.na(rownames(mat)), arr.ind = F)]
+
+#look like pseudogenes; remove
+mat = mat[-which(is.na(rownames(mat))),]
+
 mat = mat - rowMeans(mat)
 anno = as.data.frame(colData(vsd)[, c("SampleGenotype", "SampleTime")])
-
-
 
 # png(filename = "h1eatmap.png", width = 6, height = 6, units = "in", res = 300, type = "cairo")
 pheatmap::pheatmap(mat, annotation_col = anno)
